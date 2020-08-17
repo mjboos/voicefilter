@@ -56,8 +56,6 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
                 mixed_mag = mixed_mag.cuda()
 
                 dvec = torch.stack(dvec_idx, dim=0).cuda()
-                print(dvec.shape)
-                print(dvec)
                 mask = model(mixed_mag, dvec)
                 output = mixed_mag * mask
 
