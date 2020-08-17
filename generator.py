@@ -145,7 +145,7 @@ if __name__ == '__main__':
     assert not np.any([nm in train_spk for nm in background_spk])
     audio = Audio(hp)
 
-    #TODO: change such
+    #TODO: change to remove dvec sampling
     def train_wrapper(num):
         spk1 = random.sample(train_spk, 1)[0]
         spk2 = random.sample(background_spk, 1)[0]
@@ -161,7 +161,7 @@ if __name__ == '__main__':
         mix(hp, args, audio, num, s1_dvec, s1_target, s2, train=False)
 
     # TODO: make train and test size a parameter
-    arr = list(range(1000))
+    arr = list(range(100))
     with Pool(cpu_num) as p:
         r = list(tqdm.tqdm(p.imap(train_wrapper, arr), total=len(arr)))
 #
