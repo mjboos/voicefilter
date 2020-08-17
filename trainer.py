@@ -16,8 +16,9 @@ if __name__ == '__main__':
                         help="Root directory of run.")
     parser.add_argument('-c', '--config', type=str, required=True,
                         help="yaml file for configuration")
-    parser.add_argument('-e', '--embedder_path', type=str, required=True,
-                        help="path of embedder model pt file")
+    #TODO: use embedding dict here
+#    parser.add_argument('-e', '--embedder_path', type=str, required=True,
+#                        help="path of embedder model pt file")
     parser.add_argument('--checkpoint_path', type=str, default=None,
                         help="path of checkpoint pt file")
     parser.add_argument('-m', '--model', type=str, required=True,

@@ -1,4 +1,6 @@
 import os
+import numpy as np
+import json
 import glob
 import torch
 import librosa
@@ -14,8 +16,8 @@ def create_dataloader(hp, args, train):
         target_mag_list = list()
         mixed_mag_list = list()
 
-        for dvec_mel, target_mag, mixed_mag in batch:
-            dvec_list.append(dvec_mel)
+        for dvec_idx, target_mag, mixed_mag in batch:
+            dvec_list.append(dvec_idx)
             target_mag_list.append(target_mag)
             mixed_mag_list.append(mixed_mag)
         target_mag_list = torch.stack(target_mag_list, dim=0)
@@ -56,6 +58,11 @@ class VFDataset(Dataset):
         self.target_mag_list = find_all(hp.form.target.mag)
         self.mixed_mag_list = find_all(hp.form.mixed.mag)
 
+        # getting a mapping from name to dict here
+        dict_dir = hp.data.train_dir.split('/')[-2]
+        with open(os.path.join(dict_dir, 'subj_dict.json'), 'r') as fl:
+            self.subj_dict = json.load(fl)
+
         assert len(self.dvec_list) == len(self.target_wav_list) == len(self.mixed_wav_list) == \
             len(self.target_mag_list) == len(self.mixed_mag_list), "number of training files must match"
         assert len(self.dvec_list) != 0, \
@@ -69,15 +76,12 @@ class VFDataset(Dataset):
     def __getitem__(self, idx):
         with open(self.dvec_list[idx], 'r') as f:
             dvec_path = f.readline().strip()
-
-        dvec_wav, _ = librosa.load(dvec_path, sr=self.hp.audio.sample_rate)
-        dvec_mel = self.audio.get_mel(dvec_wav)
-        dvec_mel = torch.from_numpy(dvec_mel).float()
+        dvec_idx = torch.from_numpy(np.array(self.subj_dict[dvec_path.split('/')[-3]]))
 
         if self.train: # need to be fast
             target_mag = torch.load(self.target_mag_list[idx])
             mixed_mag = torch.load(self.mixed_mag_list[idx])
-            return dvec_mel, target_mag, mixed_mag
+            return dvec_idx, target_mag, mixed_mag
         else:
             target_wav, _ = librosa.load(self.target_wav_list[idx], self.hp.audio.sample_rate)
             mixed_wav, _ = librosa.load(self.mixed_wav_list[idx], self.hp.audio.sample_rate)
@@ -86,7 +90,7 @@ class VFDataset(Dataset):
             target_mag = torch.from_numpy(target_mag)
             mixed_mag = torch.from_numpy(mixed_mag)
             # mixed_phase = torch.from_numpy(mixed_phase)
-            return dvec_mel, target_wav, mixed_wav, target_mag, mixed_mag, mixed_phase
+            return dvec_idx, target_wav, mixed_wav, target_mag, mixed_mag, mixed_phase
 
     def wav2magphase(self, path):
         wav, _ = librosa.load(path, self.hp.audio.sample_rate)

@@ -7,6 +7,7 @@ import librosa
 import argparse
 import numpy as np
 from multiprocessing import Pool, cpu_count
+import json
 
 from utils.audio import Audio
 from utils.hparams import HParam
@@ -144,6 +145,12 @@ if __name__ == '__main__':
     background_spk = [x for x in background_spk if len(x) >= 2]
     assert not np.any([nm in train_spk for nm in background_spk])
     audio = Audio(hp)
+
+    # save dictionary of unique subject names
+    subj_names = {subj: idx for idx, subj in enumerate(
+        np.unique([spk[0].split('/')[-3] for spk in train_spk]+[spk[0].split('/')[-3] for spk in test_spk]))}
+    with open(os.path.join(args.out_dir, 'subj_dict.json'), 'w+') as fl:
+        json.dump(subj_names, fl)
 
     #TODO: change to remove dvec sampling
     def train_wrapper(num):

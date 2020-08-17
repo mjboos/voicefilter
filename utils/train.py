@@ -7,7 +7,7 @@ import traceback
 from .adabound import AdaBound
 from .audio import Audio
 from .evaluation import validate
-from model.model import VoiceFilter
+from model.model import VoiceFilter, VoiceFilterTrainable
 from model.embedder import SpeechEmbedder
 
 
@@ -15,13 +15,13 @@ from model.embedder import SpeechEmbedder
 
 def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp, hp_str):
     # load embedder
-    embedder_pt = torch.load(args.embedder_path)
-    embedder = SpeechEmbedder(hp).cuda()
-    embedder.load_state_dict(embedder_pt)
-    embedder.eval()
-
+#    embedder_pt = torch.load(args.embedder_path)
+#    embedder = SpeechEmbedder(hp).cuda()
+#    embedder.load_state_dict(embedder_pt)
+#    embedder.eval()
+#
     audio = Audio(hp)
-    model = VoiceFilter(hp).cuda()
+    model = VoiceFilterTrainable(hp).cuda()
     if hp.train.optimizer == 'adabound':
         optimizer = AdaBound(model.parameters(),
                              lr=hp.train.adabound.initial,
@@ -51,18 +51,13 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
         criterion = nn.MSELoss()
         while True:
             model.train()
-            for dvec_mels, target_mag, mixed_mag in trainloader:
+            for dvec_idx, target_mag, mixed_mag in trainloader:
                 target_mag = target_mag.cuda()
                 mixed_mag = mixed_mag.cuda()
 
-                dvec_list = list()
-                for mel in dvec_mels:
-                    mel = mel.cuda()
-                    dvec = embedder(mel)
-                    dvec_list.append(dvec)
-                dvec = torch.stack(dvec_list, dim=0)
-                dvec = dvec.detach()
-
+                dvec = torch.stack(dvec_idx, dim=0).cuda()
+                print(dvec.shape)
+                print(dvec)
                 mask = model(mixed_mag, dvec)
                 output = mixed_mag * mask
 
