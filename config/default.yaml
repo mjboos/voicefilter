@@ -31,7 +31,7 @@ form:
 ---
 train:
   batch_size: 8
-  num_workers: 16
+  num_workers: 2
   optimizer: 'adam'
   adam: 0.001
   adabound:
