@@ -11,6 +11,8 @@ from model.model import VoiceFilter
 from model.embedder import SpeechEmbedder
 
 
+#TODO: change training so that it doesn't use dvec
+
 def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp, hp_str):
     # load embedder
     embedder_pt = torch.load(args.embedder_path)

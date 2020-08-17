@@ -8,6 +8,7 @@ from utils.hparams import HParam
 from utils.writer import MyWriter
 from datasets.dataloader import create_dataloader
 
+#TODO: run minimally working example 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

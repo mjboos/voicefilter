@@ -6,6 +6,7 @@ from torch.utils.data import Dataset, DataLoader
 
 from utils.audio import Audio
 
+#TODO: change data loader such that it doesn't use dvec
 
 def create_dataloader(hp, args, train):
     def train_collate_fn(batch):

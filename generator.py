@@ -11,6 +11,8 @@ from multiprocessing import Pool, cpu_count
 from utils.audio import Audio
 from utils.hparams import HParam
 
+#TODO: include only two speakers and account for changed folder structure
+
 
 def formatter(dir_, form, num):
     return os.path.join(dir_, form.replace('*', '%06d' % num))
@@ -106,17 +108,23 @@ if __name__ == '__main__':
     if args.libri_dir is None and args.voxceleb_dir is None:
         raise Exception("Please provide directory of data")
 
+    #TODO: make this to args
     if args.libri_dir is not None:
-        train_folders = [x for x in glob.glob(os.path.join(args.libri_dir, 'train-clean-100', '*'))
-                            if os.path.isdir(x)] + \
-                        [x for x in glob.glob(os.path.join(args.libri_dir, 'train-clean-360', '*'))
-                            if os.path.isdir(x)]
+        train_folders = ['LibriSpeech/dev-clean/2902/9008', 'LibriSpeech/dev-clean/1673/143397']
+        test_folders = ['LibriSpeech/dev-clean/2902/9006', 'LibriSpeech/dev-clean/1673/143396']
+        background_folders = [x for x in glob.glob(os.path.join('LibriSpeech/dev-clean', '*'))
+                            if os.path.isdir(x) and x.split('/')[-1] not in ['2902', '1673']]
+
+#        train_folders = [x for x in glob.glob(os.path.join(args.libri_dir, 'train-clean-100', '*'))
+#                            if os.path.isdir(x)] + \
+#                        [x for x in glob.glob(os.path.join(args.libri_dir, 'train-clean-360', '*'))
+#                            if os.path.isdir(x)]
                         # we recommned to exclude train-other-500
                         # See https://github.com/mindslab-ai/voicefilter/issues/5#issuecomment-497746793
                         # + \
                         #[x for x in glob.glob(os.path.join(args.libri_dir, 'train-other-500', '*'))
                         #    if os.path.isdir(x)]
-        test_folders = [x for x in glob.glob(os.path.join(args.libri_dir, 'dev-clean', '*'))]
+#        test_folders = [x for x in glob.glob(os.path.join(args.libri_dir, 'dev-clean', '*'))]
 
     elif args.voxceleb_dir is not None:
         all_folders = [x for x in glob.glob(os.path.join(args.voxceleb_dir, '*'))
@@ -131,25 +139,33 @@ if __name__ == '__main__':
     test_spk = [glob.glob(os.path.join(spk, '**', hp.form.input), recursive=True)
                     for spk in test_folders]
     test_spk = [x for x in test_spk if len(x) >= 2]
-
+    background_spk = [glob.glob(os.path.join(spk, '**', hp.form.input), recursive=True)
+                        for spk in background_folders]
+    background_spk = [x for x in background_spk if len(x) >= 2]
+    assert not np.any([nm in train_spk for nm in background_spk])
     audio = Audio(hp)
 
+    #TODO: change such
     def train_wrapper(num):
-        spk1, spk2 = random.sample(train_spk, 2)
+        spk1 = random.sample(train_spk, 1)[0]
+        spk2 = random.sample(background_spk, 1)[0]
         s1_dvec, s1_target = random.sample(spk1, 2)
         s2 = random.choice(spk2)
         mix(hp, args, audio, num, s1_dvec, s1_target, s2, train=True)
 
     def test_wrapper(num):
-        spk1, spk2 = random.sample(test_spk, 2)
+        spk1 = random.sample(test_spk, 1)[0]
+        spk2 = random.sample(background_spk, 1)[0]
         s1_dvec, s1_target = random.sample(spk1, 2)
         s2 = random.choice(spk2)
         mix(hp, args, audio, num, s1_dvec, s1_target, s2, train=False)
 
-    arr = list(range(10**5))
+    # TODO: make train and test size a parameter
+    arr = list(range(1000))
     with Pool(cpu_num) as p:
         r = list(tqdm.tqdm(p.imap(train_wrapper, arr), total=len(arr)))
-
-    arr = list(range(10**2))
+#
+    arr = list(range(100))
     with Pool(cpu_num) as p:
         r = list(tqdm.tqdm(p.imap(test_wrapper, arr), total=len(arr)))
+#

@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+#TODO: change model so that it makes dvec trainable in the same model
 
 class VoiceFilter(nn.Module):
     def __init__(self, hp):
