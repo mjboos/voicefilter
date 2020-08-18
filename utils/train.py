@@ -49,7 +49,7 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
 
     try:
         criterion = nn.MSELoss()
-        while True:
+        for epoch in range(hp.train.max_epochs):
             model.train()
             for dvec_idx, target_mag, mixed_mag in trainloader:
                 target_mag = target_mag.cuda()
@@ -89,8 +89,6 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
                     }, save_path)
                     logger.info("Saved checkpoint to: %s" % save_path)
                     validate(audio, model, testloader, writer, step)
-            if step > 5:
-                    break
     except Exception as e:
         logger.info("Exiting due to exception: %s" % e)
         traceback.print_exc()

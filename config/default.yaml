@@ -39,6 +39,7 @@ train:
     final: 0.05
   summary_interval: 1
   checkpoint_interval: 10
+  max_epochs: 1
 ---
 log:
   chkpt_dir: 'chkpt'
