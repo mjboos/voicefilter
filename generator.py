@@ -168,7 +168,7 @@ if __name__ == '__main__':
         mix(hp, args, audio, num, s1_dvec, s1_target, s2, train=False)
 
     # TODO: make train and test size a parameter
-    arr = list(range(100))
+    arr = list(range(1000))
     with Pool(cpu_num) as p:
         r = list(tqdm.tqdm(p.imap(train_wrapper, arr), total=len(arr)))
 #

@@ -38,7 +38,7 @@ train:
     initial: 0.001
     final: 0.05
   summary_interval: 1
-  checkpoint_interval: 1000
+  checkpoint_interval: 10
 ---
 log:
   chkpt_dir: 'chkpt'
