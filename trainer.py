@@ -3,10 +3,10 @@ import time
 import logging
 import argparse
 
-from utils.train import train
-from utils.hparams import HParam
-from utils.writer import MyWriter
-from datasets.dataloader import create_dataloader
+from voicefilter.utils.train import train
+from voicefilter.utils.hparams import HParam
+from voicefilter.utils.writer import MyWriter
+from voicefilter.datasets.dataloader import create_dataloader
 
 
 if __name__ == '__main__':

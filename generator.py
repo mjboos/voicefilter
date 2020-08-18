@@ -9,8 +9,8 @@ import numpy as np
 from multiprocessing import Pool, cpu_count
 import json
 
-from utils.audio import Audio
-from utils.hparams import HParam
+from voicefilter.utils.audio import Audio
+from voicefilter.utils.hparams import HParam
 
 def train_test_split_folder(subj_folder, test_size=0.2, **kwargs):
     '''Does a train test split of all chapter folders in subj_folder and returns folder names as lists'''
