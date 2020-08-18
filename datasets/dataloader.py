@@ -8,8 +8,6 @@ from torch.utils.data import Dataset, DataLoader
 
 from utils.audio import Audio
 
-#TODO: change data loader such that it doesn't use dvec
-
 def create_dataloader(hp, args, train):
     def train_collate_fn(batch):
         dvec_list = list()
@@ -59,8 +57,7 @@ class VFDataset(Dataset):
         self.mixed_mag_list = find_all(hp.form.mixed.mag)
 
         # getting a mapping from name to dict here
-        dict_dir = hp.data.train_dir.split('/')[-2]
-        with open(os.path.join(dict_dir, 'subj_dict.json'), 'r') as fl:
+        with open(args.subj_dict, 'r') as fl:
             self.subj_dict = json.load(fl)
 
         assert len(self.dvec_list) == len(self.target_wav_list) == len(self.mixed_wav_list) == \
@@ -76,7 +73,7 @@ class VFDataset(Dataset):
     def __getitem__(self, idx):
         with open(self.dvec_list[idx], 'r') as f:
             dvec_path = f.readline().strip()
-        dvec_idx = torch.from_numpy(np.array(self.subj_dict[dvec_path.split('/')[-3]]))
+        dvec_idx = torch.from_numpy(np.array(self.subj_dict[dvec_path]))
 
         if self.train: # need to be fast
             target_mag = torch.load(self.target_mag_list[idx])

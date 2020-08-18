@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-#TODO: change model so that it makes dvec trainable in the same model
-
 class VoiceFilter(nn.Module):
     def __init__(self, hp):
         super(VoiceFilter, self).__init__()
@@ -140,6 +138,7 @@ class VoiceFilterTrainable(nn.Module):
             hp.model.lstm_dim,
             batch_first=True,
             bidirectional=True)
+        # we use an embedding layer to go from subject index to tensor
         self.embedding = nn.Embedding(num_embeddings=hp.embedder.num_embeddings, embedding_dim=hp.embedder.emb_dim)
         self.fc1 = nn.Linear(2*hp.model.lstm_dim, hp.model.fc1_dim)
         self.fc2 = nn.Linear(hp.model.fc1_dim, hp.model.fc2_dim)
@@ -156,8 +155,7 @@ class VoiceFilterTrainable(nn.Module):
         # x: [B, T, 8*num_freq]
 
         # dvec: [B, emb_dim]
-        # TODO: potentially improve this so that it is fixed
-        # TODO: assert here for shape
+        # here we ge from index to embedding tensor
         dvec = self.embedding(speaker_idx)
         dvec = dvec.unsqueeze(1)
         dvec = dvec.repeat(1, x.size(1), 1)

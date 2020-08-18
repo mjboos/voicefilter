@@ -12,8 +12,11 @@ import json
 from utils.audio import Audio
 from utils.hparams import HParam
 
-#TODO: include only two speakers and account for changed folder structure
-
+def train_test_split_folder(subj_folder, test_size=0.2, **kwargs):
+    '''Does a train test split of all chapter folders in subj_folder and returns folder names as lists'''
+    from sklearn.model_selection import train_test_split
+    chapter_folders = [x for x in glob.glob(os.path.join(subj_folder, '*')) if os.path.isdir(x)]
+    return train_test_split(chapter_folders, test_size=test_size, **kwargs)
 
 def formatter(dir_, form, num):
     return os.path.join(dir_, form.replace('*', '%06d' % num))
@@ -30,19 +33,13 @@ def mix(hp, args, audio, num, s1_dvec, s1_target, s2, train):
     srate = hp.audio.sample_rate
     dir_ = os.path.join(args.out_dir, 'train' if train else 'test')
 
-    d, _ = librosa.load(s1_dvec, sr=srate)
     w1, _ = librosa.load(s1_target, sr=srate)
     w2, _ = librosa.load(s2, sr=srate)
-    assert len(d.shape) == len(w1.shape) == len(w2.shape) == 1, \
+    assert len(w1.shape) == len(w2.shape) == 1, \
         'wav files must be mono, not stereo'
 
-    d, _ = librosa.effects.trim(d, top_db=20)
     w1, _ = librosa.effects.trim(w1, top_db=20)
     w2, _ = librosa.effects.trim(w2, top_db=20)
-
-    # if reference for d-vector is too short, discard it
-    if d.shape[0] < 1.1 * hp.embedder.window * hp.audio.hop_length:
-        return
 
     # LibriSpeech dataset have many silent interval, so let's vad-merge them
     # VoiceFilter paper didn't do that. To test SDR in same way, don't vad-merge.
@@ -76,7 +73,7 @@ def mix(hp, args, audio, num, s1_dvec, s1_target, s2, train):
     torch.save(torch.from_numpy(target_mag), target_mag_path)
     torch.save(torch.from_numpy(mixed_mag), mixed_mag_path)
 
-    # save selected sample as text file. d-vec will be calculated soon
+    # save selected subject name as text file
     dvec_text_path = formatter(dir_, hp.form.dvec, num)
     with open(dvec_text_path, 'w') as f:
         f.write(s1_dvec)
@@ -86,16 +83,18 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-c', '--config', type=str, required=True,
                         help="yaml file for configuration")
-    parser.add_argument('-d', '--libri_dir', type=str, default=None,
-                        help="Directory of LibriSpeech dataset, containing folders of train-clean-100, train-clean-360, dev-clean.")
-    parser.add_argument('-v', '--voxceleb_dir', type=str, default=None,
-                        help="Directory of VoxCeleb2 dataset, ends with 'aac'")
+    parser.add_argument('-d', '--libri_dir', type=str, required=True,
+                        help="Directory of LibriSpeech dataset, containing folders of dev-clean.")
     parser.add_argument('-o', '--out_dir', type=str, required=True,
                         help="Directory of output training triplet")
     parser.add_argument('-p', '--process_num', type=int, default=None,
                         help='number of processes to run. default: cpu_count')
     parser.add_argument('--vad', type=int, default=0,
                         help='apply vad to wav file. yes(1) or no(0, default)')
+    parser.add_argument('--train_size', type=int, default=100, help='Size of training set to be generated')
+    parser.add_argument('--test_size', type=int, default=100, help='Size of test set to be generated')
+    parser.add_argument('--test_proportion', type=float, default=0.2, help='Proportion of chapters of each subject to be used for the test set.')
+    parser.add_argument('--subjects', nargs='+', default=None, help='Names of subjects to use')
     args = parser.parse_args()
 
     os.makedirs(args.out_dir, exist_ok=True)
@@ -106,73 +105,67 @@ if __name__ == '__main__':
 
     cpu_num = cpu_count() if args.process_num is None else args.process_num
 
-    if args.libri_dir is None and args.voxceleb_dir is None:
-        raise Exception("Please provide directory of data")
+    subj_folders = [x for x in glob.glob(os.path.join(args.libri_dir, 'dev-clean', '*'))
+                        if os.path.isdir(x)]
+    if args.subjects is not None:
+        subjects_to_use = [sub_folder for sub_folder in subj_folders if sub_folder.split('/')[-1] in args.subjects]
+    else:
+        subjects_to_use = np.random.sample(subj_folders, 2)
+    # TODO: test for multiple chapters
+    # train/test split based on chapter -> use only one chapter for testing
+    train_folders, test_folders = zip(*[train_test_split_folder(sub_folder, test_size=args.test_proportion)
+                                        for sub_folder in subjects_to_use])
+    #train_folders = ['LibriSpeech/dev-clean/2902/9008', 'LibriSpeech/dev-clean/1673/143397']
+    #test_folders = ['LibriSpeech/dev-clean/2902/9006', 'LibriSpeech/dev-clean/1673/143396']
 
-    #TODO: make this to args
-    if args.libri_dir is not None:
-        train_folders = ['LibriSpeech/dev-clean/2902/9008', 'LibriSpeech/dev-clean/1673/143397']
-        test_folders = ['LibriSpeech/dev-clean/2902/9006', 'LibriSpeech/dev-clean/1673/143396']
-        background_folders = [x for x in glob.glob(os.path.join('LibriSpeech/dev-clean', '*'))
-                            if os.path.isdir(x) and x.split('/')[-1] not in ['2902', '1673']]
+    background_folders = [x for x in subj_folders
+                            if x not in subjects_to_use]
 
-#        train_folders = [x for x in glob.glob(os.path.join(args.libri_dir, 'train-clean-100', '*'))
-#                            if os.path.isdir(x)] + \
-#                        [x for x in glob.glob(os.path.join(args.libri_dir, 'train-clean-360', '*'))
-#                            if os.path.isdir(x)]
-                        # we recommned to exclude train-other-500
-                        # See https://github.com/mindslab-ai/voicefilter/issues/5#issuecomment-497746793
-                        # + \
-                        #[x for x in glob.glob(os.path.join(args.libri_dir, 'train-other-500', '*'))
-                        #    if os.path.isdir(x)]
-#        test_folders = [x for x in glob.glob(os.path.join(args.libri_dir, 'dev-clean', '*'))]
+    train_spk = [[glob.glob(os.path.join(chapter_spk, '**', hp.form.input), recursive=True)
+                  for chapter_spk in spk]
+                 for spk in train_folders]
+    train_spk = [[x for chpt in spk for x in chpt]
+                  for spk in train_spk]
+    test_spk = [[glob.glob(os.path.join(chapter_spk, '**', hp.form.input), recursive=True)
+                  for chapter_spk in spk]
+                 for spk in test_folders]
+    test_spk = [[x for chpt in spk for x in chpt]
+                  for spk in test_spk]
 
-    elif args.voxceleb_dir is not None:
-        all_folders = [x for x in glob.glob(os.path.join(args.voxceleb_dir, '*'))
-                            if os.path.isdir(x)]
-        train_folders = all_folders[:-20]
-        test_folders = all_folders[-20:]
 
-    train_spk = [glob.glob(os.path.join(spk, '**', hp.form.input), recursive=True)
-                    for spk in train_folders]
-    train_spk = [x for x in train_spk if len(x) >= 2]
-
-    test_spk = [glob.glob(os.path.join(spk, '**', hp.form.input), recursive=True)
-                    for spk in test_folders]
-    test_spk = [x for x in test_spk if len(x) >= 2]
     background_spk = [glob.glob(os.path.join(spk, '**', hp.form.input), recursive=True)
                         for spk in background_folders]
-    background_spk = [x for x in background_spk if len(x) >= 2]
     assert not np.any([nm in train_spk for nm in background_spk])
     audio = Audio(hp)
 
     # save dictionary of unique subject names
     subj_names = {subj: idx for idx, subj in enumerate(
         np.unique([spk[0].split('/')[-3] for spk in train_spk]+[spk[0].split('/')[-3] for spk in test_spk]))}
+    # TODO: make as argument
     with open(os.path.join(args.out_dir, 'subj_dict.json'), 'w+') as fl:
         json.dump(subj_names, fl)
 
-    #TODO: change to remove dvec sampling
     def train_wrapper(num):
         spk1 = random.sample(train_spk, 1)[0]
         spk2 = random.sample(background_spk, 1)[0]
-        s1_dvec, s1_target = random.sample(spk1, 2)
+        s1_target = random.choice(spk1)
         s2 = random.choice(spk2)
-        mix(hp, args, audio, num, s1_dvec, s1_target, s2, train=True)
+        s1_name = s1_target.split('/')[-3]
+        mix(hp, args, audio, num, s1_name, s1_target, s2, train=True)
 
     def test_wrapper(num):
         spk1 = random.sample(test_spk, 1)[0]
         spk2 = random.sample(background_spk, 1)[0]
-        s1_dvec, s1_target = random.sample(spk1, 2)
+        s1_target = random.choice(spk1)
         s2 = random.choice(spk2)
-        mix(hp, args, audio, num, s1_dvec, s1_target, s2, train=False)
+        s1_name = s1_target.split('/')[-3]
+        mix(hp, args, audio, num, s1_name, s1_target, s2, train=False)
 
-    # TODO: make train and test size a parameter
-    arr = list(range(1000))
+    arr = list(range(args.train_size))
     with Pool(cpu_num) as p:
         r = list(tqdm.tqdm(p.imap(train_wrapper, arr), total=len(arr)))
 #
-    arr = list(range(100))
+    arr = list(range(args.test_size))
     with Pool(cpu_num) as p:
         r = list(tqdm.tqdm(p.imap(test_wrapper, arr), total=len(arr)))
 #

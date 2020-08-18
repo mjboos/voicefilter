@@ -54,7 +54,6 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
             for dvec_idx, target_mag, mixed_mag in trainloader:
                 target_mag = target_mag.cuda()
                 mixed_mag = mixed_mag.cuda()
-
                 dvec = torch.stack(dvec_idx, dim=0).cuda()
                 mask = model(mixed_mag, dvec)
                 output = mixed_mag * mask
@@ -90,7 +89,7 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
                     }, save_path)
                     logger.info("Saved checkpoint to: %s" % save_path)
                     validate(audio, model, testloader, writer, step)
-                if step > 300:
+                if step > 30:
                     break
     except Exception as e:
         logger.info("Exiting due to exception: %s" % e)
