@@ -5,7 +5,6 @@ from mir_eval.separation import bss_eval_sources
 
 def validate(audio, model, testloader, writer, step):
     model.eval()
-    
     criterion = nn.MSELoss()
     with torch.no_grad():
         for batch in testloader:

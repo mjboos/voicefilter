@@ -6,9 +6,9 @@ import librosa
 import numpy as np
 import argparse
 
-from utils.audio import Audio
-from utils.hparams import HParam
-from model.model import VoiceFilterTrainable
+from .utils.audio import Audio
+from .utils.hparams import HParam
+from .model.model import VoiceFilterTrainable
 
 
 
