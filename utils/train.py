@@ -7,7 +7,7 @@ import traceback
 from .adabound import AdaBound
 from .audio import Audio
 from .evaluation import validate
-from ..model.model import VoiceFilter, VoiceFilterTrainable
+from model.model import VoiceFilter, VoiceFilterTrainable
 
 
 def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp, hp_str):
