@@ -6,4 +6,5 @@ setup(
     author="Moritz Boos",
     author_email="moritz.boos@gmail.com",
     packages=find_packages(),
+    install_requires=["numpy", "librosa", "matplotlib", "tqdm", "Pillow", "tensorboardX", "pyyaml", "mir_eval"]
 )
