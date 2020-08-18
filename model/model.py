@@ -156,7 +156,9 @@ class VoiceFilterTrainable(nn.Module):
 
         # dvec: [B, emb_dim]
         # here we ge from index to embedding tensor
+        print(speaker_idx)
         dvec = self.embedding(speaker_idx)
+        print(dvec)
         dvec = dvec.unsqueeze(1)
         dvec = dvec.repeat(1, x.size(1), 1)
         # dvec: [B, T, emb_dim]

@@ -89,7 +89,7 @@ def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp,
                     }, save_path)
                     logger.info("Saved checkpoint to: %s" % save_path)
                     validate(audio, model, testloader, writer, step)
-                if step > 30:
+            if step > 5:
                     break
     except Exception as e:
         logger.info("Exiting due to exception: %s" % e)
