@@ -141,7 +141,6 @@ if __name__ == '__main__':
     # save dictionary of unique subject names
     subj_names = {subj: idx for idx, subj in enumerate(
         np.unique([spk[0].split('/')[-3] for spk in train_spk]+[spk[0].split('/')[-3] for spk in test_spk]))}
-    # TODO: make as argument
     with open(os.path.join(args.out_dir, 'subj_dict.json'), 'w+') as fl:
         json.dump(subj_names, fl)
 
