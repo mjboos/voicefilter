@@ -33,13 +33,13 @@ train:
   batch_size: 8
   num_workers: 2
   optimizer: 'adam'
-  adam: 0.001
+  adam: 0.0003
   adabound:
     initial: 0.001
     final: 0.05
   summary_interval: 1
   checkpoint_interval: 10
-  max_epochs: 1
+  max_epochs: 3
 ---
 log:
   chkpt_dir: 'chkpt'

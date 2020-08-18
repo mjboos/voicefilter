@@ -8,18 +8,9 @@ from .adabound import AdaBound
 from .audio import Audio
 from .evaluation import validate
 from model.model import VoiceFilter, VoiceFilterTrainable
-from model.embedder import SpeechEmbedder
 
-
-#TODO: change training so that it doesn't use dvec
 
 def train(args, pt_dir, chkpt_path, trainloader, testloader, writer, logger, hp, hp_str):
-    # load embedder
-#    embedder_pt = torch.load(args.embedder_path)
-#    embedder = SpeechEmbedder(hp).cuda()
-#    embedder.load_state_dict(embedder_pt)
-#    embedder.eval()
-#
     audio = Audio(hp)
     model = VoiceFilterTrainable(hp).cuda()
     if hp.train.optimizer == 'adabound':
